@@ -185,13 +185,14 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     unsigned int shaderProgram;
     Result result = CreateShaderProgram(vertexSource, fragmentSource, shaderProgram);
 
-    VertexData vertexData[6]{};
-    vertexData[0] = { {-5.0f, 5.0f, 0.0f}, {1.0f, 0.0f, 0.0f} };
-    vertexData[1] = { {-5.0f,-5.0f, 0.0f}, {1.0f, 0.0f, 0.0f} };
-    vertexData[2] = { { 5.0f,-5.0f, 0.0f}, {1.0f, 0.0f, 0.0f} };
-    vertexData[3] = { {-5.0f, 5.0f, 0.0f}, {0.0f, 0.0f, 1.0f} };
-    vertexData[4] = { { 5.0f,-5.0f, 0.0f}, {0.0f, 0.0f, 1.0f} };
-    vertexData[5] = { { 5.0f, 5.0f, 0.0f}, {0.0f, 0.0f, 1.0f} };
+    VertexData vertexData[7]{};
+    vertexData[0] = { { 5.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f} };
+    vertexData[1] = { { 5.0f, 20.0f, 0.0f}, {1.0f, 0.0f, 0.0f} };
+    vertexData[2] = { { 10.0f, 20.0f, 0.0f}, {1.0f, 0.0f, 0.0f} };
+    vertexData[3] = { { 0.0f, 35.0f, 0.0f}, {1.0f, 0.0f, 0.0f} };
+    vertexData[4] = { {-10.0f, 20.0f, 0.0f}, {1.0f, 0.0f, 0.0f} };
+    vertexData[5] = { {-5.0f, 20.0f, 0.0f}, {1.0f, 0.0f, 0.0f} };
+    vertexData[6] = { {-5.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f} };
 
     int width, height;
     glfwGetWindowSize(window, &width, &height);
@@ -205,11 +206,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     // The camera's z points down the -ve world z
     viewOriginal[2] = glm::vec4( 0.0f, 0.0f, -1.0f, 0.0f);
 
-    float left = -10.0f;
-    float right = 10.0f;
+    float left = -100.0f;
+    float right = 100.0f;
     left *= aspectRatio;
     right *= aspectRatio;
-    glm::mat4 projection = glm::ortho(left, right, -10.0f, 10.0f, -1.0f, 1.0f);
+    glm::mat4 projection = glm::ortho(left, right, -100.0f, 100.0f, -1.0f, 1.0f);
 
     unsigned int vaoId, vboId;
     glGenVertexArrays(1, &vaoId);
@@ -239,8 +240,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     unsigned int viewLoc = glGetUniformLocation(shaderProgram, "view");
     unsigned int worldLoc = glGetUniformLocation(shaderProgram, "world");
 
-    float angle = 45;
-    float xPos = -10, yPos = 0;
+    float angle = 0;
+    float moveDelta = 0;
+    float xPos = 0, yPos = 0;
 
     while (!glfwWindowShouldClose(window)) {
         ProcessInput(window);
@@ -248,8 +250,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         glClearColor(clearColor.r, clearColor.g, clearColor.b, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
+        
+        glm::vec4 delta = referenceFrame[1] * moveDelta;
         referenceFrame = glm::rotate(glm::mat4(1.0f), glm::radians(angle), glm::vec3(0.0f, 0.0f, 1.0f));
-        view = glm::translate(viewOriginal, glm::vec3(xPos, yPos, 0.0f));
+        referenceFrame[3] = glm::vec4(xPos + delta[0], yPos + delta[1], 0.0f, 1.0f);
+
 
         // Render the object
         if (result.isSuccess)
@@ -281,7 +286,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                 sizeof(VertexData), // The number of bytes to the next color
                 (void*)sizeof(glm::vec3) // Byte offset of the first color in the array
             );
-            glDrawArrays(GL_TRIANGLES, 0, 6);
+            glDrawArrays(GL_LINE_LOOP, 0, 7);
 
             glDisableVertexAttribArray(0);
             glDisableVertexAttribArray(1);
@@ -297,9 +302,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
             1000.0f / io.Framerate, io.Framerate);
         ImGui::ColorEdit3("Background color", (float*)&clearColor.r);
-        ImGui::SliderFloat("Angle", &angle, 0, 359);
-        ImGui::SliderFloat("Camera X", &xPos, -10, 10);
-        ImGui::SliderFloat("Camera Y", &yPos, -10, 10);
+        ImGui::SliderFloat("Angle", &angle, 0, 360);
+        ImGui::SliderFloat("Object X", &xPos, -100, 100);
+        ImGui::SliderFloat("Object Y", &yPos, -100, 100);
+        ImGui::SliderFloat("Move Delta", &moveDelta, -100, 100);
         ImGui::End();
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
