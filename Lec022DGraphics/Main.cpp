@@ -240,20 +240,26 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     unsigned int viewLoc = glGetUniformLocation(shaderProgram, "view");
     unsigned int worldLoc = glGetUniformLocation(shaderProgram, "world");
 
-    float angle = 0;
+    float angle = 0, oldAngle=999999;
     float moveDelta = 0;
     float xPos = 0, yPos = 0;
+    glm::vec4 oldDelta = { 0, 0, 0, 0 };
 
     while (!glfwWindowShouldClose(window)) {
         ProcessInput(window);
 
         glClearColor(clearColor.r, clearColor.g, clearColor.b, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
-
         
+
         glm::vec4 delta = referenceFrame[1] * moveDelta;
+        if (delta != oldDelta) {
+            xPos = xPos - oldDelta[0] + delta[0];
+            yPos = yPos - oldDelta[1] + delta[1];        
+        }
         referenceFrame = glm::rotate(glm::mat4(1.0f), glm::radians(angle), glm::vec3(0.0f, 0.0f, 1.0f));
-        referenceFrame[3] = glm::vec4(xPos + delta[0], yPos + delta[1], 0.0f, 1.0f);
+        referenceFrame[3] = glm::vec4(xPos, yPos, 0.0f, 1.0f);
+        oldDelta = delta;
 
 
         // Render the object
@@ -281,7 +287,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             glVertexAttribPointer(
                 1,
                 3,              // Each color has 3 components
-                GL_FLOAT,       // Each component is a 32-bit floating point value
+                GL_FLOAT,       // Each component is a 32-bit float-ing point value
                 GL_FALSE,
                 sizeof(VertexData), // The number of bytes to the next color
                 (void*)sizeof(glm::vec3) // Byte offset of the first color in the array
