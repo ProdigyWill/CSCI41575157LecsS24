@@ -240,10 +240,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     unsigned int viewLoc = glGetUniformLocation(shaderProgram, "view");
     unsigned int worldLoc = glGetUniformLocation(shaderProgram, "world");
 
-    float angle = 0, oldAngle=999999;
-    float moveDelta = 0;
-    float xPos = 0, yPos = 0;
-    glm::vec4 oldDelta = { 0, 0, 0, 0 };
+    float angle = 0, oldAngle =  0.0f;
+    float moveDelta = 0, oldDelta =0.0f;
+    float xPos = 0, yPos = 0, oldX = 0.0f, oldY = 0.0f;
 
     while (!glfwWindowShouldClose(window)) {
         ProcessInput(window);
@@ -252,15 +251,39 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         glClear(GL_COLOR_BUFFER_BIT);
         
 
-        glm::vec4 delta = referenceFrame[1] * moveDelta;
-        if (delta != oldDelta) {
-            xPos = xPos - oldDelta[0] + delta[0];
-            yPos = yPos - oldDelta[1] + delta[1];        
+        
+        if (moveDelta != oldDelta) {
+            glm::vec4 delta = referenceFrame[1] * moveDelta;
+            xPos = delta.x;
+            yPos = delta.y;
+            oldDelta = moveDelta;
         }
-        referenceFrame = glm::rotate(glm::mat4(1.0f), glm::radians(angle), glm::vec3(0.0f, 0.0f, 1.0f));
-        referenceFrame[3] = glm::vec4(xPos, yPos, 0.0f, 1.0f);
-        oldDelta = delta;
 
+        if (xPos != oldX || yPos != oldY) {
+            // Update reference frame based on changes in xPos and yPos
+            referenceFrame[3][0] += (xPos - oldX) * aspectRatio;
+            referenceFrame[3][1] += yPos - oldY;
+
+            // Update oldX and oldY
+            oldX = xPos;
+            oldY = yPos;
+        }
+
+        if (angle != oldAngle) {
+            // Update the rotation matrix
+            glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(angle), glm::vec3(0.0f, 0.0f, 1.0f));
+
+            // Copy the rotation matrix to the reference frame
+            referenceFrame[0] = rotationMatrix[0];
+            referenceFrame[1] = rotationMatrix[1];
+            referenceFrame[2] = rotationMatrix[2];
+
+            // Update oldAngle
+            oldAngle = angle;
+        }
+        //referenceFrame = glm::rotate(glm::mat4(1.0f), glm::radians(angle), glm::vec3(0.0f, 0.0f, 1.0f));
+        //referenceFrame[3] = glm::vec4(xPos, yPos, 0.0f, 1.0f);
+        
 
         // Render the object
         if (result.isSuccess)
