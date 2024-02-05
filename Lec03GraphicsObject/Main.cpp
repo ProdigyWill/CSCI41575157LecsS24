@@ -15,6 +15,7 @@
 #include "VertexBuffer.h"
 #include "GraphicsObject.h"
 #include "Scene.h"
+#include "Shader.h"
 
 void OnWindowSizeChanged(GLFWwindow* window, int width, int height)
 {
@@ -28,118 +29,9 @@ void ProcessInput(GLFWwindow* window)
 	}
 }
 
-struct Result {
-	bool isSuccess;
-	std::string message;
-
-	Result() : isSuccess(true) {}
-};
-
-struct VertexData {
-	glm::vec3 position, color;
-};
-
-static void Log(std::stringstream& log, const std::vector<char>& message)
+static void RenderObject(const GraphicsObject& object, Shader& shader)
 {
-	std::copy(message.begin(), message.end(), std::ostream_iterator<char>(log, ""));
-}
-
-static unsigned int CompileShaderSource(
-	const std::string& shaderSource, int type, std::stringstream& logger, Result& result)
-{
-	unsigned shaderId = glCreateShader(type);
-
-	// Send the vertex shader source code to GL
-	// Note that std::string's .c_str is NULL character terminated.
-	const char* source = (const char*)shaderSource.c_str();
-	glShaderSource(shaderId, 1, &source, 0);
-
-	glCompileShader(shaderId);
-
-	int isCompiled = 0;
-	glGetShaderiv(shaderId, GL_COMPILE_STATUS, &isCompiled);
-	if (isCompiled == GL_FALSE) {
-		int maxLength = 0;
-		glGetShaderiv(shaderId, GL_INFO_LOG_LENGTH, &maxLength);
-
-		// The maxLength includes the NULL character
-		std::vector<char> infoLog(maxLength);
-		glGetShaderInfoLog(shaderId, maxLength, &maxLength, &infoLog[0]);
-
-		// We don't need the shader anymore.
-		glDeleteShader(shaderId);
-
-		Log(logger, infoLog);
-		result.isSuccess = false;
-		result.message = logger.str();
-		return -1;
-	}
-	result.isSuccess = true;
-	result.message = "Success!";
-	return shaderId;
-}
-
-static Result CreateShaderProgram(
-	std::string& vertexSource, std::string& fragmentSource, unsigned int& program)
-{
-	std::stringstream logger;
-	Result result;
-
-	unsigned int vertexShader =
-		CompileShaderSource(vertexSource, GL_VERTEX_SHADER, logger, result);
-	if (result.isSuccess == false) return result;
-
-	unsigned int fragmentShader =
-		CompileShaderSource(fragmentSource, GL_FRAGMENT_SHADER, logger, result);
-	if (result.isSuccess == false) return result;
-
-	// Time to link the shaders together into a program.
-
-	program = glCreateProgram();
-
-	// Attach our shaders to our program
-	glAttachShader(program, vertexShader);
-	glAttachShader(program, fragmentShader);
-
-	// Link our program
-	glLinkProgram(program);
-
-	// Note the different functions here: glGetProgram* instead of glGetShader*.
-	int isLinked = 0;
-	glGetProgramiv(program, GL_LINK_STATUS, (int*)&isLinked);
-	if (isLinked == GL_FALSE)
-	{
-		GLint maxLength = 0;
-		glGetProgramiv(program, GL_INFO_LOG_LENGTH, &maxLength);
-
-		std::vector<GLchar> infoLog(maxLength);
-		glGetProgramInfoLog(program, maxLength, &maxLength, &infoLog[0]);
-
-		// We don't need the program anymore.
-		glDeleteProgram(program);
-		// Don't leak shaders either.
-		glDeleteShader(vertexShader);
-		glDeleteShader(fragmentShader);
-
-		Log(logger, infoLog);
-		result.isSuccess = false;
-		result.message = logger.str();
-		return result;
-	}
-
-	// Always detach shaders after a successful link.
-	glDetachShader(program, vertexShader);
-	glDetachShader(program, fragmentShader);
-	result.isSuccess = true;
-	result.message = "Successfully created the shader!";
-	return result;
-}
-
-static void RenderObject(const GraphicsObject& object, unsigned int matrixLoc)
-{
-	glUniformMatrix4fv(
-		matrixLoc, 1, GL_FALSE,
-		glm::value_ptr(object.GetReferenceFrame()));
+	shader.SendMat4Uniform("world", object.GetReferenceFrame());
 
 	auto& buffer = object.GetVertexBuffer();
 	buffer->Select();
@@ -149,7 +41,7 @@ static void RenderObject(const GraphicsObject& object, unsigned int matrixLoc)
 	// Recursively render the children
 	auto& children = object.GetChildren();
 	for (auto& child : children) {
-		RenderObject(*child, matrixLoc);
+		RenderObject(*child, shader);
 	}
 }
 
@@ -196,31 +88,13 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	glfwSetFramebufferSizeCallback(window, OnWindowSizeChanged);
 	//glfwMaximizeWindow(window);
 
-	std::string vertexSource =
-		"#version 430\n"
-		"layout(location = 0) in vec3 position;\n"
-		"layout(location = 1) in vec3 color;\n"
-		"out vec4 fragColor;\n"
-		"uniform mat4 world;\n"
-		"uniform mat4 view;\n"
-		"uniform mat4 projection;\n"
-		"void main()\n"
-		"{\n"
-		"   gl_Position = projection * view * world * vec4(position, 1.0);\n"
-		"   fragColor = vec4(color, 1.0);\n"
-		"}\n";
-
-	std::string fragmentSource =
-		"#version 430\n"
-		"in vec4 fragColor;\n"
-		"out vec4 color;\n"
-		"void main()\n"
-		"{\n"
-		"   color = fragColor;\n"
-		"}\n";
-
 	unsigned int shaderProgram;
-	Result result = CreateShaderProgram(vertexSource, fragmentSource, shaderProgram);
+	std::shared_ptr<Shader> shader = std::make_shared<Shader>();
+	shader->AddUniform("projection");
+	shader->AddUniform("world");
+	shader->AddUniform("view");
+	shaderProgram = shader->GetShaderProgram();
+
 
 	int width, height;
 	glfwGetWindowSize(window, &width, &height);
@@ -287,17 +161,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	ImGui_ImplGlfw_InitForOpenGL(window, true);
 	ImGui_ImplOpenGL3_Init("#version 430");
 
-	std::string message = result.message;
-
 	glm::vec3 clearColor = { 0.2f, 0.3f, 0.3f };
 
 	glUseProgram(shaderProgram);
 
-	unsigned int projectionLoc = glGetUniformLocation(shaderProgram, "projection");
-	glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
-
-	unsigned int viewLoc = glGetUniformLocation(shaderProgram, "view");
-	unsigned int worldLoc = glGetUniformLocation(shaderProgram, "world");
+	shader->SendMat4Uniform("projection", projection);
 
 	float angle = 0, childAngle = 0;
 	float cameraX = -10, cameraY = 0;
@@ -326,13 +194,13 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		}
 
 		// Render the scene
-		if (result.isSuccess) {
+		if (shader->IsCreated()) {
 			glUseProgram(shaderProgram);
 			glBindVertexArray(vaoId);
-			glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+			shader->SendMat4Uniform("view", view);
 			// Render the objects in the scene
 			for (auto& object : objects) {
-				RenderObject(*object, worldLoc);
+				RenderObject(*object, *shader);
 			}
 			glDisableVertexAttribArray(0);
 			glDisableVertexAttribArray(1);
@@ -344,7 +212,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 		ImGui::Begin("Computing Interactive Graphics");
-		ImGui::Text(message.c_str());
+		ImGui::Text(shader->GetLog().c_str());
 		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
 			1000.0f / io.Framerate, io.Framerate);
 		ImGui::ColorEdit3("Background color", (float*)&clearColor.r);
