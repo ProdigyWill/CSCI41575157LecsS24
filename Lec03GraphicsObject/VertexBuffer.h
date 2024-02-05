@@ -31,6 +31,7 @@ public:
 	inline void Deselect() { glBindBuffer(GL_ARRAY_BUFFER, 0); }
 	inline unsigned int GetNumberOfVertices() const { return numberOfVertices; }
 	inline int GetPrimitiveType() const { return primitiveType; }
+	inline void SetPrimitiveType(int primitiveType) { this->primitiveType = primitiveType; }
 
 	// Variadic function
 	void AddVertexData(unsigned int count, ...);
