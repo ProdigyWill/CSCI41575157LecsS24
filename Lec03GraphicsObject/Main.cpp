@@ -16,6 +16,7 @@
 #include "GraphicsObject.h"
 #include "Scene.h"
 #include "Shader.h"
+#include "Renderer.cpp"
 
 void OnWindowSizeChanged(GLFWwindow* window, int width, int height)
 {
@@ -26,22 +27,6 @@ void ProcessInput(GLFWwindow* window)
 {
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
 		glfwSetWindowShouldClose(window, true);
-	}
-}
-
-static void RenderObject(const GraphicsObject& object, Shader& shader)
-{
-	shader.SendMat4Uniform("world", object.GetReferenceFrame());
-
-	auto& buffer = object.GetVertexBuffer();
-	buffer->Select();
-	buffer->SetUpAttributeInterpretration();
-	glDrawArrays(buffer->GetPrimitiveType(), 0, buffer->GetNumberOfVertices());
-
-	// Recursively render the children
-	auto& children = object.GetChildren();
-	for (auto& child : children) {
-		RenderObject(*child, shader);
 	}
 }
 
@@ -193,20 +178,23 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 			}
 		}
 
+		Renderer renderer(shader);
+		renderer.RenderScene(scene, view);
+
 		// Render the scene
-		if (shader->IsCreated()) {
-			glUseProgram(shaderProgram);
-			glBindVertexArray(vaoId);
-			shader->SendMat4Uniform("view", view);
-			// Render the objects in the scene
-			for (auto& object : objects) {
-				RenderObject(*object, *shader);
-			}
-			glDisableVertexAttribArray(0);
-			glDisableVertexAttribArray(1);
-			glUseProgram(0);
-			glBindVertexArray(0);
-		}
+		//if (shader->IsCreated()) {
+		//	glUseProgram(shaderProgram);
+		//	glBindVertexArray(vaoId);
+		//	shader->SendMat4Uniform("view", view);
+		//	// Render the objects in the scene
+		//	for (auto& object : objects) {
+		//		RenderObject(*object, *shader);
+		//	}
+		//	glDisableVertexAttribArray(0);
+		//	glDisableVertexAttribArray(1);
+		//	glUseProgram(0);
+		//	glBindVertexArray(0);
+		//}
 
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();

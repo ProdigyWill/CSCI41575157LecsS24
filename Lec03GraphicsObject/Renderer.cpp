@@ -50,14 +50,14 @@ public:
         glBindVertexArray(0);
     }
 
-    void RenderScene(const Scene& scene, const glm::mat4& view) {
+    void RenderScene(const std::shared_ptr<Scene> scene, const glm::mat4& view) {
         if (shader->IsCreated()) {
             glUseProgram(shader->GetShaderProgram());
             glBindVertexArray(vaoId);
             shader->SendMat4Uniform("view", view);
 
             // Get the objects from the scene
-            const std::vector<std::shared_ptr<GraphicsObject>>& objects = scene.GetObjects();
+            const std::vector<std::shared_ptr<GraphicsObject>>& objects = scene->GetObjects();
 
             // Render the objects in the scene
             for (auto& object : objects) {
