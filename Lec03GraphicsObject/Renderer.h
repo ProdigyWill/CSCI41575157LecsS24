@@ -4,15 +4,23 @@
 #include <unordered_map>
 #include <glm/glm.hpp>
 #include "BaseObject.h"
-class Renderer : public BaseObject
-{
-public:
-	Renderer();
-	~Renderer() = default;
-
-	inline const std::shared_ptr<Shader>& GetShader() const { return shader; }
+#include <glad/glad.h>
+#include "GraphicsObject.h"
+#include "Scene.h"
+class Renderer {
 private:
-	std::shared_ptr<Shader> shader;
-	unsigned int vaoId;
+    std::shared_ptr<Shader> shader;
+    GLuint vaoId;
+
+public:
+    Renderer(const std::shared_ptr<Shader>& shader);
+    ~Renderer();
+
+    inline const std::shared_ptr<Shader>& getShader() const {
+        return shader;
+    }
+
+    void staticAllocateVertexBuffers(const std::vector<GraphicsObject>& objects);
+
 };
 
