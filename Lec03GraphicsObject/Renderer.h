@@ -14,13 +14,9 @@ private:
 
 public:
     Renderer(const std::shared_ptr<Shader>& shader);
-    ~Renderer();
 
     inline const std::shared_ptr<Shader>& getShader() const {
         return shader;
     }
-
-    void staticAllocateVertexBuffers(const std::vector<GraphicsObject>& objects);
-
 };
 

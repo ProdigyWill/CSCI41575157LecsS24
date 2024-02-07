@@ -18,16 +18,24 @@ public:
     Renderer(const std::shared_ptr<Shader>& shader) : shader(shader) {
         // Generate VAO
         glGenVertexArrays(1, &vaoId);
-        glBindVertexArray(vaoId);
     }
 
     ~Renderer() {
-        // Delete VAO when done
+        // Example cleanup of the VAO
         glDeleteVertexArrays(1, &vaoId);
     }
-    
-    void staticAllocateVertexBuffers(const std::vector<GraphicsObject>& objects) {
 
+    void allocateVertexBuffers(const std::vector<std::shared_ptr<GraphicsObject>>& objects) {
+        // Bind VAO before allocating vertex buffers
+        glBindVertexArray(vaoId);
+
+        // Perform static allocation of vertex buffers here
+        for (const auto& object : objects) {
+            object->StaticAllocateVertexBuffer();
+        }
+
+        // Unbind VAO after allocating vertex buffers
+        glBindVertexArray(0);
     }
 };
 
