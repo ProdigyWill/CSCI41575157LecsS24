@@ -181,21 +181,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		Renderer renderer(shader);
 		renderer.RenderScene(scene, view);
 
-		// Render the scene
-		//if (shader->IsCreated()) {
-		//	glUseProgram(shaderProgram);
-		//	glBindVertexArray(vaoId);
-		//	shader->SendMat4Uniform("view", view);
-		//	// Render the objects in the scene
-		//	for (auto& object : objects) {
-		//		RenderObject(*object, *shader);
-		//	}
-		//	glDisableVertexAttribArray(0);
-		//	glDisableVertexAttribArray(1);
-		//	glUseProgram(0);
-		//	glBindVertexArray(0);
-		//}
-
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
