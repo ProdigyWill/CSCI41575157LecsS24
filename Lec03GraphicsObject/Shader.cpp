@@ -39,43 +39,43 @@ void Shader::SendMat4Uniform(const std::string& uniformName, const glm::mat4& ma
     glUniformMatrix4fv(uniformMap[uniformName], 1, GL_FALSE, glm::value_ptr(mat));
 }
 
-//void Shader::SetDefaultSource()
-//{
-//    vertexSource =
-//        "#version 430\n"
-//        "layout(location = 0) in vec3 position;\n"
-//        "layout(location = 1) in vec3 color;\n"
-//        "out vec4 fragColor;\n"
-//        "uniform mat4 world;\n"
-//        "uniform mat4 view;\n"
-//        "uniform mat4 projection;\n"
-//        "void main()\n"
-//        "{\n"
-//        "   gl_Position = projection * view * world * vec4(position, 1.0);\n"
-//        "   fragColor = vec4(color, 1.0);\n"
-//        "}\n";
-//
-//    fragmentSource =
-//        "#version 430\n"
-//        "in vec4 fragColor;\n"
-//        "out vec4 color;\n"
-//        "void main()\n"
-//        "{\n"
-//        "   color = fragColor;\n"
-//        "}\n";
-//}
-
 void Shader::SetDefaultSource()
 {
-    const std::string vertexFilePath = "basic.vert.glsl";
-    const std::string fragmentFilePath = "basic.frag.glsl";
+    vertexSource =
+        "#version 430\n"
+        "layout(location = 0) in vec3 position;\n"
+        "layout(location = 1) in vec3 color;\n"
+        "out vec4 fragColor;\n"
+        "uniform mat4 world;\n"
+        "uniform mat4 view;\n"
+        "uniform mat4 projection;\n"
+        "void main()\n"
+        "{\n"
+        "   gl_Position = projection * view * world * vec4(position, 1.0);\n"
+        "   fragColor = vec4(color, 1.0);\n"
+        "}\n";
 
-    TextFile vertexFile(vertexFilePath);
-    TextFile fragmentFile(fragmentFilePath);
-
-    vertexSource = vertexFile.getData();
-    fragmentSource = fragmentFile.getData();
+    fragmentSource =
+        "#version 430\n"
+        "in vec4 fragColor;\n"
+        "out vec4 color;\n"
+        "void main()\n"
+        "{\n"
+        "   color = fragColor;\n"
+        "}\n";
 }
+
+//void Shader::SetDefaultSource()
+//{
+//    const std::string vertexFilePath = "basic.vert.glsl";
+//    const std::string fragmentFilePath = "basic.frag.glsl";
+//
+//    TextFile vertexFile(vertexFilePath);
+//    TextFile fragmentFile(fragmentFilePath);
+//
+//    vertexSource = vertexFile.getData();
+//    fragmentSource = fragmentFile.getData();
+//}
 
 void Shader::Init()
 {

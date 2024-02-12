@@ -17,6 +17,7 @@
 #include "Scene.h"
 #include "Shader.h"
 #include "Renderer.cpp"
+#include "TextFile.h"
 
 void OnWindowSizeChanged(GLFWwindow* window, int width, int height)
 {
@@ -73,8 +74,17 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	glfwSetFramebufferSizeCallback(window, OnWindowSizeChanged);
 	//glfwMaximizeWindow(window);
 
+	const std::string vertexFilePath = "basic.vert.glsl";
+	const std::string fragmentFilePath = "basic.frag.glsl";
+	
+	TextFile vertexFile(vertexFilePath);
+	TextFile fragmentFile(fragmentFilePath);
+	
+	std::string vertexSource = vertexFile.getData();
+	std::string fragmentSource = fragmentFile.getData();
+
 	unsigned int shaderProgram;
-	std::shared_ptr<Shader> shader = std::make_shared<Shader>();
+	std::shared_ptr<Shader> shader = std::make_shared<Shader>(vertexSource, fragmentSource);
 	shader->AddUniform("projection");
 	shader->AddUniform("world");
 	shader->AddUniform("view");
@@ -130,14 +140,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	line->SetPosition(glm::vec3(5.0f, -10.0f, 0.0f));
 	triangle->AddChild(line);
 
-	unsigned int vaoId;
-	glGenVertexArrays(1, &vaoId);
-	glBindVertexArray(vaoId);
-	auto& objects = scene->GetObjects();
-	for (auto& object : objects) {
-		object->StaticAllocateVertexBuffer();
-	}
-	glBindVertexArray(0);
+	Renderer renderer(shader);
+	renderer.allocateVertexBuffers(scene->GetObjects());
 
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
@@ -169,7 +173,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		);
 
 		// Update the objects in the scene
-		for (auto& object : objects) {
+		for (auto& object : scene->GetObjects()) {
 			object->ResetOrientation();
 			object->RotateLocalZ(angle);
 			for (auto& child : object->GetChildren()) {
@@ -178,7 +182,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 			}
 		}
 
-		Renderer renderer(shader);
+
 		renderer.RenderScene(scene, view);
 
 		ImGui_ImplOpenGL3_NewFrame();

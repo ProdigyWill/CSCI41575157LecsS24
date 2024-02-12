@@ -1,5 +1,3 @@
-#ifndef TEXTFILE_H
-#define TEXTFILE_H
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -18,4 +16,3 @@ public:
 
     void reportData() const;
 };
-#endif
